@@ -4,6 +4,7 @@
 #include "pch.h"
 #include "framework.h"
 #include "RemoteCtrl.h"
+#include <iostream>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
