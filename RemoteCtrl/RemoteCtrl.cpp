@@ -17,23 +17,19 @@ CWinApp theApp;
 
 using namespace std;
 
-int main()
-{
+int main() {
     int nRetCode = 0;
 
     HMODULE hModule = ::GetModuleHandle(nullptr);
 
-    if (hModule != nullptr)
-    {
+    if (hModule != nullptr) {
         // 初始化 MFC 并在失败时显示错误
-        if (!AfxWinInit(hModule, nullptr, ::GetCommandLine(), 0))
-        {
+        if (!AfxWinInit(hModule, nullptr, ::GetCommandLine(), 0)) {
             // TODO: 在此处为应用程序的行为编写代码。
             wprintf(L"错误: MFC 初始化失败\n");
             nRetCode = 1;
         }
-        else
-        {
+        else {
             // TODO: 在此处为应用程序的行为编写代码。
             if (!CServerSocket::GetInstance()->InitSocket()) {
                 MessageBox(NULL, _T("网络初始化失败，请检查网络设置"), _T("网络初始化失败"), MB_OK | MB_ICONERROR);

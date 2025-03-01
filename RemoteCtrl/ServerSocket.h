@@ -2,8 +2,7 @@
 #include "pch.h"
 #include "framework.h"
 
-class CServerSocket
-{
+class CServerSocket {
 public:
     static CServerSocket* GetInstance();
     static void ReleaseInstance();

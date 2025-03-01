@@ -11,8 +11,7 @@ CServerSocket* CServerSocket::GetInstance() {
     return m_pInstance;
 }
 
-void CServerSocket::ReleaseInstance()
-{
+void CServerSocket::ReleaseInstance() {
     if (m_pInstance != nullptr) {
         delete m_pInstance;
         m_pInstance = nullptr;
@@ -40,8 +39,7 @@ bool CServerSocket::InitSockEnv() {
     return true;
 }
 
-bool CServerSocket::InitSocket()
-{
+bool CServerSocket::InitSocket() {
     // 1.´´½¨Ì×½Ó×Ö
     m_sockServer = socket(AF_INET, SOCK_STREAM, 0);
     if (m_sockServer == INVALID_SOCKET) {
@@ -63,8 +61,7 @@ bool CServerSocket::InitSocket()
     return true;
 }
 
-bool CServerSocket::AcceptClient()
-{
+bool CServerSocket::AcceptClient() {
     sockaddr_in cli_addr;
     int addr_size = sizeof(sizeof(cli_addr));
     m_sockClient = accept(m_sockServer, (sockaddr*)&cli_addr, &addr_size);
@@ -74,8 +71,7 @@ bool CServerSocket::AcceptClient()
     return true;
 }
 
-int CServerSocket::DealCommand()
-{
+int CServerSocket::DealCommand() {
     if (m_sockClient == INVALID_SOCKET) {
         return false;
     }
@@ -90,20 +86,17 @@ int CServerSocket::DealCommand()
     }
 }
 
-bool CServerSocket::SendData(const char* pData, int nSize)
-{
+bool CServerSocket::SendData(const char* pData, int nSize) {
     if (m_sockClient == INVALID_SOCKET) {
         return false;
     }
     return send(m_sockClient, pData, nSize, 0) > 0;
 }
 
-CServerSocket::CHelper::CHelper()
-{
+CServerSocket::CHelper::CHelper() {
     CServerSocket::GetInstance();
 }
 
-CServerSocket::CHelper::~CHelper()
-{
+CServerSocket::CHelper::~CHelper() {
     CServerSocket::ReleaseInstance();
 }
