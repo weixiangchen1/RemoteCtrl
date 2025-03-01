@@ -4,7 +4,7 @@
 #include "pch.h"
 #include "framework.h"
 #include "RemoteCtrl.h"
-#include <iostream>
+#include "ServerSocket.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -35,8 +35,25 @@ int main()
         else
         {
             // TODO: 在此处为应用程序的行为编写代码。
+            if (!CServerSocket::GetInstance()->InitSocket()) {
+                MessageBox(NULL, _T("网络初始化失败，请检查网络设置"), _T("网络初始化失败"), MB_OK | MB_ICONERROR);
+                exit(0);
+            }
+            int iCount = 0;
+            while (CServerSocket::GetInstance()) {
+                if (!CServerSocket::GetInstance()->AcceptClient()) {
+                    if (iCount == 5) {
+                        MessageBox(NULL, _T("连接客户端失败，结束程序"), _T("连接客户端失败"), MB_OK | MB_ICONERROR);
+                        exit(0);
+                    }
+                    MessageBox(NULL, _T("连接客户端失败，重新连接"), _T("连接客户端失败"), MB_OK | MB_ICONERROR);
+                    iCount++;
+                }
+                // TODO: 调用DealCommand处理业务逻辑
+                // CServerSocket::GetInstance()->DealCommand()
+            }
         }
-    }
+    } 
     else
     {
         // TODO: 更改错误代码以符合需要
