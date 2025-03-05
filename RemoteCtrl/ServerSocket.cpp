@@ -104,6 +104,13 @@ bool CServerSocket::SendData(const char* pData, int nSize) {
     return send(m_sockClient, pData, nSize, 0) > 0;
 }
 
+bool CServerSocket::SendData(CPacket& packet) {
+    if (m_sockClient == INVALID_SOCKET) {
+        return false;
+    }
+    return send(m_sockClient, packet.Data(), packet.Size(), 0) > 0;
+}
+
 CServerSocket::CHelper::CHelper() {
     CServerSocket::GetInstance();
 }
@@ -166,13 +173,25 @@ CPacket::CPacket(const BYTE* pData, size_t& nSize) {
     i += checkSize;
     WORD checkValue = 0;
     for (size_t j = 0; j < strData.size(); ++j) {
-        checkValue += BYTE(strData[i]) & 0xFF;
+        checkValue += BYTE(strData[j]) & 0xFF;
     }
     if (checkValue == sChecksum) {
         nSize = i;
         return;
     }
     nSize = 0;
+}
+
+CPacket::CPacket(WORD sCmd, const BYTE* pData, size_t nSize) {
+    sHead = 0xFEFF;
+    nLength = nSize + 4;
+    sCommand = sCmd;
+    strData.resize(nSize);
+    memcpy((void*)strData.c_str(), pData, nSize);
+    sChecksum = 0;
+    for (size_t j = 0; j < strData.size(); ++j) {
+        sChecksum += BYTE(strData[j]) & 0xFF;
+    }
 }
 
 CPacket::CPacket(const CPacket& packet) {
@@ -193,6 +212,24 @@ CPacket& CPacket::operator=(const CPacket& packet)
         sChecksum = packet.sChecksum;
     }
     return *this;
+}
+
+int CPacket::Size()
+{
+    return nLength + 2 + 4;
+}
+
+const char* CPacket::Data()
+{
+    size_t headSize = 2, lengthSize = 4, commandSize = 2, checkSize = 2;
+    strOut.resize(nLength + headSize + lengthSize);
+    BYTE* pData = (BYTE*)strOut.c_str();
+    *(WORD*)pData = sHead; pData += headSize;
+    *(DWORD*)pData = nLength; pData += lengthSize;
+    *(WORD*)pData = sCommand; pData += commandSize;
+    memcpy(pData, strData.c_str(), strData.size()); pData += strData.size();
+    *(WORD*)pData = sChecksum;
+    return strOut.c_str();
 }
 
 
