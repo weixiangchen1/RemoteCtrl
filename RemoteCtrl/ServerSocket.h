@@ -2,6 +2,22 @@
 #include "pch.h"
 #include "framework.h"
 
+class CPacket {
+public:
+    CPacket();
+    CPacket(const BYTE* pData, size_t& nSize);
+    CPacket(const CPacket& packet);
+    CPacket& operator=(const CPacket& packet);
+    ~CPacket();
+
+public:
+    WORD sHead;             // 包头 (0xFEFF)
+    DWORD nLength;          // 包长度
+    WORD sCommand;          // 控制命令
+    std::string strData;    // 包数据
+    WORD sChecksum;         // 校验值 
+};
+
 class CServerSocket {
 public:
     static CServerSocket* GetInstance();
@@ -25,6 +41,7 @@ private:
     };
     SOCKET m_sockServer;
     SOCKET m_sockClient;
+    CPacket m_packet;
 
 public:
     static CHelper m_pHelper;

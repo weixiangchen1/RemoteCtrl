@@ -71,19 +71,30 @@ bool CServerSocket::AcceptClient() {
     return true;
 }
 
+#define BUFFER_SIZE 4096
 int CServerSocket::DealCommand() {
     if (m_sockClient == INVALID_SOCKET) {
-        return false;
+        return -1;
     }
 
-    char buffer[1024] = { 0 };
+    char buffer[BUFFER_SIZE] = { 0 };
+    memset(buffer, 0, BUFFER_SIZE); 
+    size_t index = 0;
     while (true) {
-        size_t len = recv(m_sockClient, buffer, sizeof(buffer), 0);
+        size_t len = recv(m_sockClient, buffer + index, BUFFER_SIZE - index, 0);
         if (len < 0) {
-            return -1;
+            return -2;
         }
-        // TODO: 其他处理逻辑
+        index += len;
+        len = index;
+        m_packet = CPacket((BYTE*)buffer, len);
+        if (len > 0) {
+            memmove(buffer, buffer + len, BUFFER_SIZE - len);
+            index -= len;
+            return m_packet.sCommand;
+        }
     }
+    return -3;
 }
 
 bool CServerSocket::SendData(const char* pData, int nSize) {
@@ -100,3 +111,91 @@ CServerSocket::CHelper::CHelper() {
 CServerSocket::CHelper::~CHelper() {
     CServerSocket::ReleaseInstance();
 }
+
+CPacket::CPacket()
+    :sHead(0), nLength(0), sCommand(0), sChecksum(0) {
+}
+
+CPacket::CPacket(const BYTE* pData, size_t& nSize) {
+    // Packet: [ head | length | command | data | checksum ]
+    // Size:       2       4        2   length-2-2    2
+    // length = commandSize + data.size() + checkSize
+    size_t headSize = 2, lengthSize = 4, commandSize = 2, checkSize = 2;
+    size_t i = 0;
+
+    // 寻找数据包头(0xFEFF)
+    for (; i < nSize; ++i) {
+        if (*(WORD*)(pData + i) == 0xFEFF) {
+            sHead = *(WORD*)(pData + i);
+            i += headSize;
+            break;
+        }
+    }
+
+    // 数据包长度小于除data外的长度(head+length+command+checksum) 数据包不完整
+    if (i + lengthSize + commandSize + checkSize > nSize) {
+        nSize = 0;
+        return;
+    }
+
+    // 取出数据长度
+    nLength = *(DWORD*)(pData + i);
+    i += lengthSize;
+    // 数据包未完全接收到
+    // nLength = commandSize + data.size() + checkSize
+    if (nLength + i > nSize) {
+        nSize = 0;
+        return;
+    }
+
+    // 取出指令数据
+    sCommand = *(WORD*)(pData + i);
+    i += commandSize;
+
+    // 取出数据包的主体数据
+    // data.size() = nLength - commandSize - checkSize
+    size_t dataSize = nLength - commandSize - checkSize;
+    if (dataSize > 0) {
+        strData.resize(dataSize);
+        memcpy((void*)strData.c_str(), pData + i, dataSize);
+        i += dataSize;
+    }
+
+    // 取出校验位并计算校验位是否正确
+    sChecksum = *(WORD*)(pData + i);
+    i += checkSize;
+    WORD checkValue = 0;
+    for (size_t j = 0; j < strData.size(); ++j) {
+        checkValue += BYTE(strData[i]) & 0xFF;
+    }
+    if (checkValue == sChecksum) {
+        nSize = i;
+        return;
+    }
+    nSize = 0;
+}
+
+CPacket::CPacket(const CPacket& packet) {
+    sHead = packet.sHead;
+    nLength = packet.nLength;
+    sCommand = packet.sCommand;
+    strData = packet.strData;
+    sChecksum = packet.sChecksum;
+}
+
+CPacket& CPacket::operator=(const CPacket& packet)
+{
+    if (this != &packet) {
+        sHead = packet.sHead;
+        nLength = packet.nLength;
+        sCommand = packet.sCommand;
+        strData = packet.strData;
+        sChecksum = packet.sChecksum;
+    }
+    return *this;
+}
+
+
+CPacket::~CPacket() {
+}
+
